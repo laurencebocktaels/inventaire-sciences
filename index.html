@@ -1,0 +1,213 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Inventaire matériel — Sciences (exemple)</title>
+  <!-- DataTables CSS -->
+  <link rel="stylesheet" href="https://cdn.datatables.net/1.13.6/css/jquery.dataTables.min.css">
+  <style>
+    /* Styles simples pour rendre la page lisible */
+    body{font-family:system-ui,-apple-system,Segoe UI,Roboto,"Helvetica Neue",Arial;line-height:1.4;margin:18px;color:#111}
+    .container{max-width:1100px;margin:0 auto}
+    h1{margin-bottom:6px}
+    #controls{margin:12px 0 18px;display:flex;gap:12px;align-items:center;flex-wrap:wrap}
+    select, button{padding:6px 10px;font-size:14px}
+    .thumb{width:80px;height:auto;border-radius:6px;box-shadow:0 1px 3px rgba(0,0,0,0.15);cursor:pointer}
+    .no-photo{opacity:0.6;font-style:italic}
+
+    /* Modal image preview */
+    .modal{display:none;position:fixed;z-index:9999;left:0;top:0;width:100%;height:100%;overflow:auto;background-color:rgba(0,0,0,0.75);align-items:center;justify-content:center}
+    .modal-content{max-width:90%;max-height:80%;box-shadow:0 6px 18px rgba(0,0,0,0.5);border-radius:8px}
+    .modal-caption{color:#fff;margin-top:8px;text-align:center}
+    .modal-close{position:absolute;right:18px;top:12px;color:#fff;font-size:30px;cursor:pointer}
+
+    /* Responsive tweaks */
+    @media (max-width:600px){.thumb{width:64px}}
+
+    /* Small helpers for table cells */
+    td img{vertical-align:middle}
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>Inventaire matériel — Sciences</h1>
+    <p>Catalogue consultable en ligne. Modifiez <code>data.csv</code> pour mettre à jour le contenu et placez les photos dans le dossier <code>images/</code>.</p>
+
+    <div id="controls">
+      <label for="themeFilter">Filtrer par thème :</label>
+      <select id="themeFilter">
+        <option value="">Tous</option>
+      </select>
+      <button id="clearFilter">Effacer le filtre</button>
+      <div style="margin-left:auto;font-size:13px;color:#555">Cliquez sur une photo pour l'agrandir</div>
+    </div>
+
+    <table id="inventory" class="display" style="width:100%">
+      <thead>
+        <tr>
+          <th>Photo</th>
+          <th>Nom</th>
+          <th>Description</th>
+          <th>Thèmes</th>
+          <th>Nombre</th>
+        </tr>
+      </thead>
+      <tbody></tbody>
+    </table>
+  </div>
+
+  <!-- Modal pour aperçu image -->
+  <div id="imgModal" class="modal" role="dialog" aria-hidden="true">
+    <span class="modal-close" id="modalClose" aria-label="Fermer">&times;</span>
+    <div style="text-align:center;max-width:100%">
+      <img id="modalImg" class="modal-content" src="" alt="">
+      <div id="modalCaption" class="modal-caption"></div>
+    </div>
+  </div>
+
+  <!-- Dépendances JS -->
+  <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+  <script src="https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.2/papaparse.min.js"></script>
+
+  <script>
+    // -----------------------
+    // Helpers
+    // -----------------------
+    function escapeHtml(str){
+      if(!str && str !== 0) return '';
+      return String(str).replace(/[&<>\"']/g, function(m){
+        return ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'})[m];
+      });
+    }
+    function getFirst(row, keys){
+      for(var i=0;i<keys.length;i++){
+        var k = keys[i];
+        if(row[k] !== undefined && row[k] !== null){
+          var v = String(row[k]).trim();
+          if(v !== '') return v;
+        }
+      }
+      return '';
+    }
+    function escapeForRegex(s){
+      return s.replace(/[.*+?^${}()|[\]\\]/g,'\\$&');
+    }
+
+    // -----------------------
+    // Lecture du CSV et initialisation DataTable
+    // -----------------------
+    Papa.parse('data.csv', {
+      download: true,
+      header: true,
+      skipEmptyLines: true,
+      complete: function(results){
+        // Convertir les clés du CSV en champs utilisables (gestion basique des accents / casse)
+        var rows = results.data.map(function(r){
+          return {
+            Photo: getFirst(r,['Photo','photo','PHOTO']),
+            Nom: getFirst(r,['Nom','nom','Name','name']),
+            Description: getFirst(r,['Description','description']),
+            Themes: getFirst(r,['Thèmes','Themes','themes','thema','Thèmes']),
+            Nombre: getFirst(r,['Nombre','nombre','Qty','qty','Quantité'])
+          };
+        });
+
+        // Initialiser DataTable
+        var table = $('#inventory').DataTable({
+          data: rows,
+          columns: [
+            {
+              data: 'Photo',
+              title: 'Photo',
+              orderable: false,
+              searchable: false,
+              render: function(data, type, row){
+                if(!data) return '<div class="no-photo">—</div>';
+                // img tag ; on utilise un attribut src normal pour la compatibilité
+                return '<img src="'+escapeHtml(data)+'" alt="'+escapeHtml(row.Nom)+'" class="thumb" tabindex="0">';
+              }
+            },
+            {data: 'Nom', title: 'Nom'},
+            {data: 'Description', title: 'Description'},
+            {data: 'Themes', title: 'Thèmes'},
+            {data: 'Nombre', title: 'Nombre'}
+          ],
+          order: [[1,'asc']],
+          pageLength: 25,
+          responsive: true,
+          language: {
+            search: "Recherche:",
+            lengthMenu: "Afficher _MENU_ éléments",
+            info: "Affichage _START_ à _END_ sur _TOTAL_",
+            paginate: { previous: "Précédent", next: "Suivant" }
+          }
+        });
+
+        // Ouvrir la modale quand on clique sur la miniature (délégué)
+        $('#inventory tbody').on('click', 'img.thumb', function(){
+          openModal(this.src, this.alt || '');
+        });
+        // Activation clavier (Entrée)
+        $('#inventory tbody').on('keydown', 'img.thumb', function(e){ if(e.key === 'Enter') $(this).trigger('click'); });
+
+        // Construire la liste des thèmes pour le filtre
+        var themesSet = new Set();
+        rows.forEach(function(r){
+          if(!r.Themes) return;
+          // Séparer par virgule, point-virgule ou slash
+          r.Themes.split(/[;,\/]+/).map(function(t){
+            var tt = t.trim(); if(tt) themesSet.add(tt);
+          });
+        });
+        var themes = Array.from(themesSet).sort(function(a,b){ return a.localeCompare(b,'fr'); });
+        var $sel = $('#themeFilter');
+        themes.forEach(function(t){
+          $sel.append('<option value="'+escapeHtml(t)+'">'+escapeHtml(t)+'</option>');
+        });
+
+        // Filtrage par thème (colonne 3)
+        $sel.on('change', function(){
+          var val = $(this).val();
+          if(!val){ table.column(3).search('').draw(); }
+          else{
+            var regex = escapeForRegex(val);
+            // recherche regex (colonne contenant possiblement plusieurs thèmes séparés)
+            table.column(3).search('\\b'+regex+'\\b', true, false).draw();
+          }
+        });
+        $('#clearFilter').on('click', function(){ $sel.val(''); $sel.trigger('change'); });
+
+        // Fin du complete
+      },
+      error: function(err){
+        console.error('Erreur lecture data.csv', err);
+        alert('Impossible de charger data.csv — vérifiez que le fichier existe et est accessible (sur GitHub Pages le chemin doit être correct).');
+      }
+    });
+
+    // -----------------------
+    // Modal functions
+    // -----------------------
+    function openModal(src, caption){
+      var $m = $('#imgModal');
+      $('#modalImg').attr('src', src).attr('alt', caption || '');
+      $('#modalCaption').text(caption || '');
+      $m.css('display','flex').attr('aria-hidden','false');
+    }
+    function closeModal(){
+      var $m = $('#imgModal');
+      $('#modalImg').attr('src','');
+      $m.css('display','none').attr('aria-hidden','true');
+    }
+    $('#modalClose').on('click', closeModal);
+    $('#imgModal').on('click', function(e){ if(e.target.id === 'imgModal') closeModal(); });
+    $(document).on('keydown', function(e){ if(e.key === 'Escape') closeModal(); });
+
+    // Conseil pour test local
+    // Si vous ouvrez index.html en local (file://), la lecture de data.csv peut être bloquée par le navigateur.
+    // Lancez un serveur local (ex: `python -m http.server 8000`) pour tester avant de pousser sur GitHub Pages.
+  </script>
+</body>
+</html>
