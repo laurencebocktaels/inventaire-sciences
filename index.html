@@ -97,7 +97,7 @@
             { data: 'Photo', orderable: false, searchable: false,
               render: function(data, type, row){
                 if(!data) return '<div class="no-photo">—</div>';
-                return '<img src="'+escapeHtml(data)+'" alt="'+escapeHtml(row.Nom)+'" class="thumb" tabindex="0">';
+               return '<img src="images/'+escapeHtml(data)+'" alt="'+escapeHtml(row.Nom)+'" class="thumb" tabindex="0">';
               }
             },
             {data: 'Nom'},
@@ -163,4 +163,5 @@
   </script>
 </body>
 </html>
+
 
