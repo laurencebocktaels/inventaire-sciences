@@ -1,6 +1,6 @@
 ﻿Nom;Description;Thèmes;Nombre;Photo
 Mouette cycle de l'eau;"Maquette 50x30.  Permet de  simuler le cycle de l'eau""";Eau;1;images/maquette%20cycle%20de%20l'eau.jpg
-Loupes;;Observation, Monde du vivant;>30;loupes.jpg
+Loupes;;Observation, Monde du vivant;>31;loupes.jpg
 Naturescope;Petit vivarium pour plantes ou insectes;Observation/ Monde du vivant/ Monde minéral;1;oui
 Seringues 60 ml;;Eau / Air;13;oui
 "Malettes ""aimant""";Mallette contenant des canettes acier + Aimants;Recyclage;1;
@@ -35,6 +35,7 @@ Balles caoutchouc dur;Diamètre balles de golf;Matières;11;
 Balles de ping-pong;;Matières;10;
 Balles en mousse;Format balle de tennis;Matières;9;
 Balles de tennis;;;14;
+
 
 
 
